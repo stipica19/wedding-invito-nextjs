@@ -10,7 +10,6 @@ type InvitationListItem = {
   slug: string;
   status: "draft" | "pending" | "published";
   data?: Record<string, unknown>;
-  createdAt: string;
 };
 
 const statusConfig = {
@@ -28,38 +27,34 @@ const statusConfig = {
   },
 };
 
-export default async function DashboardPage() {
+export default async function DashboardInvitationsPage() {
   const session = await getAuthSession();
-
   if (!session?.user) {
     redirect("/login");
   }
 
   await connectToDatabase();
-
   const invitations = (await Invitation.find({ ownerId: session.user.id })
     .sort({ createdAt: -1 })
     .lean()) as unknown as InvitationListItem[];
-
-  const publishedCount = invitations.filter(
-    (i) => i.status === "published"
-  ).length;
-
-  const pendingCount = invitations.filter((i) => i.status === "pending").length;
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
+          <Link
+            href="/dashboard"
+            className="mb-2 inline-flex items-center gap-1 text-xs text-stone-500 hover:text-stone-700"
+          >
+            ← Dashboard
+          </Link>
           <h1 className="font-display text-3xl font-bold text-stone-900">
-            Dashboard
+            Moje pozivnice
           </h1>
           <p className="mt-1 text-sm text-stone-500">
-            Prijavljeni kao{" "}
-            <span className="font-medium text-stone-700">
-              {session.user.email}
-            </span>
+            {invitations.length}{" "}
+            {invitations.length === 1 ? "pozivnica" : "pozivnica"} ukupno
           </p>
         </div>
         <Link
@@ -83,75 +78,15 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {/* Stats */}
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wider text-stone-400">
-            Ukupno
-          </p>
-          <p className="mt-2 text-3xl font-bold text-stone-900">
-            {invitations.length}
-          </p>
-          <p className="mt-0.5 text-xs text-stone-500">pozivnica</p>
-        </div>
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wider text-emerald-600">
-            Objavljeno
-          </p>
-          <p className="mt-2 text-3xl font-bold text-emerald-700">
-            {publishedCount}
-          </p>
-          <p className="mt-0.5 text-xs text-emerald-600">aktivnih pozivnica</p>
-        </div>
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wider text-amber-600">
-            Na čekanju
-          </p>
-          <p className="mt-2 text-3xl font-bold text-amber-700">
-            {pendingCount}
-          </p>
-          <p className="mt-0.5 text-xs text-amber-600">čeka objavu</p>
-        </div>
-      </div>
-
-      {/* Recent invitations */}
-      <section className="mt-10">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-stone-900">
-            Zadnje pozivnice
-          </h2>
-          {invitations.length > 5 && (
-            <Link
-              href="/dashboard/invitations"
-              className="text-sm text-rose-700 hover:text-rose-800 underline underline-offset-4"
-            >
-              Sve pozivnice →
-            </Link>
-          )}
-        </div>
-
+      {/* List */}
+      <div className="mt-8">
         {invitations.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-stone-300 bg-white p-10 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-50">
-              <svg
-                className="h-6 w-6 text-rose-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
-                />
-              </svg>
-            </div>
+          <div className="rounded-2xl border border-dashed border-stone-300 bg-white p-12 text-center">
             <p className="text-sm font-medium text-stone-700">
               Još nemate pozivnica
             </p>
             <p className="mt-1 text-xs text-stone-500">
-              Odaberite templejt i kreirajte prvu pozivnicu
+              Odaberite templejt i kreirajte prvu
             </p>
             <Link
               href="/templates"
@@ -162,12 +97,13 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {invitations.slice(0, 5).map((invitation) => {
+            {invitations.map((invitation) => {
               const title =
                 typeof invitation.data?.title === "string"
                   ? invitation.data.title
                   : invitation.slug;
-              const status = statusConfig[invitation.status] ?? statusConfig.draft;
+              const status =
+                statusConfig[invitation.status] ?? statusConfig.draft;
 
               return (
                 <article
@@ -191,10 +127,8 @@ export default async function DashboardPage() {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-stone-900">{title}</h3>
-                      <p className="text-xs text-stone-500">
-                        /{invitation.slug}
-                      </p>
+                      <h2 className="font-semibold text-stone-900">{title}</h2>
+                      <p className="text-xs text-stone-500">/{invitation.slug}</p>
                     </div>
                   </div>
 
@@ -208,9 +142,9 @@ export default async function DashboardPage() {
                       href={`/dashboard/invitations/${String(invitation._id)}`}
                       className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50 transition-colors"
                     >
-                      RSVP
+                      Detalji i RSVP
                     </Link>
-                    {invitation.status === "published" && (
+                    {invitation.status === "published" ? (
                       <>
                         <Link
                           href={`/${invitation.slug}`}
@@ -221,25 +155,18 @@ export default async function DashboardPage() {
                         </Link>
                         <CopyInviteLinkButton slug={invitation.slug} />
                       </>
+                    ) : (
+                      <span className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs text-stone-400">
+                        Nije javno
+                      </span>
                     )}
                   </div>
                 </article>
               );
             })}
-
-            {invitations.length > 5 && (
-              <div className="pt-2 text-center">
-                <Link
-                  href="/dashboard/invitations"
-                  className="text-sm font-medium text-rose-700 hover:text-rose-800 underline underline-offset-4"
-                >
-                  Pogledaj sve {invitations.length} pozivnice →
-                </Link>
-              </div>
-            )}
           </div>
         )}
-      </section>
+      </div>
     </div>
   );
 }

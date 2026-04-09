@@ -1,22 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist } from "next/font/google";
+import { Playfair_Display } from "next/font/google";
 import "./globals.css";
 import NavBar from "../components/NavBar";
 import Footer from "../components/Footer";
+import QueryProvider from "@/components/providers/QueryProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const playfairDisplay = Playfair_Display({
+  variable: "--font-playfair-display",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Invitations",
-  description: "Create and share beautiful invitations",
+  title: "Invito — Vjenčane Pozivnice Online",
+  description:
+    "Kreirajte prekrasne digitalne vjenčane pozivnice, pratite RSVP odgovore i podijelite ih s gostima u minutama.",
 };
 
 export default function RootLayout({
@@ -25,13 +29,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="bs">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-white text-gray-900 antialiased`}
+        className={`${geistSans.variable} ${playfairDisplay.variable} min-h-screen antialiased`}
       >
-        <NavBar />
-        <main className="mx-auto w-full max-w-6xl px-6 py-10">{children}</main>
-        <Footer />
+        <QueryProvider>
+          <NavBar />
+          <main className="w-full">{children}</main>
+          <Footer />
+        </QueryProvider>
       </body>
     </html>
   );

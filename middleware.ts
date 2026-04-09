@@ -1,21 +1,34 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const isDashboard = pathname.startsWith("/dashboard");
     const isAdmin = pathname.startsWith("/admin");
+    const isAuthPage = pathname === "/login" || pathname === "/register";
+    const isProtectedPage = isDashboard || isAdmin;
 
-    if (!isDashboard && !isAdmin) {
+    if (!isProtectedPage && !isAuthPage) {
         return NextResponse.next();
     }
 
-    // TODO: Replace with NextAuth token/session validation.
-    const isAuthenticated = true;
-    const userRole: "user" | "admin" = "admin";
+    const token = await getToken({
+        req: request,
+        secret: process.env.NEXTAUTH_SECRET,
+    });
 
-    if (!isAuthenticated) {
+    const isAuthenticated = Boolean(token?.id);
+    const userRole = token?.role;
+
+    if (isAuthPage && isAuthenticated) {
+        const dashboardUrl = new URL("/dashboard", request.url);
+        return NextResponse.redirect(dashboardUrl);
+    }
+
+    if (isProtectedPage && !isAuthenticated) {
         const loginUrl = new URL("/login", request.url);
+        loginUrl.searchParams.set("callbackUrl", pathname);
         return NextResponse.redirect(loginUrl);
     }
 
@@ -28,5 +41,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/dashboard/:path*", "/admin/:path*"],
+    matcher: ["/dashboard/:path*", "/admin/:path*", "/login", "/register"],
 };

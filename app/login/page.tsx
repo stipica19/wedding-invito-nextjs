@@ -12,7 +12,17 @@ import { loginSchema, type LoginInput } from "@/schemas/auth.schema";
 export default function LoginPage() {
   const router = useRouter();
   const params = useSearchParams();
-  const callbackUrl = params.get("callbackUrl") || "/dashboard";
+  const rawCallbackUrl = params.get("callbackUrl") || "/dashboard";
+
+  const callbackUrl = (() => {
+    if (!rawCallbackUrl.startsWith("/") || rawCallbackUrl.startsWith("//")) {
+      return "/dashboard";
+    }
+    if (rawCallbackUrl === "/login" || rawCallbackUrl === "/register") {
+      return "/dashboard";
+    }
+    return rawCallbackUrl;
+  })();
 
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -43,65 +53,91 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-xl border p-6">
-        <h1 className="text-2xl font-semibold">Prijava</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Prijavi se da upravljaš pozivnicama.
-        </p>
-
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit(onSubmit)}>
-          <div>
-            <label className="text-sm font-medium">Email</label>
-            <input
-              className="mt-1 w-full rounded-lg border px-3 py-2"
-              placeholder="ivana@email.com"
-              type="email"
-              {...register("email")}
-            />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.email.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Lozinka</label>
-            <input
-              className="mt-1 w-full rounded-lg border px-3 py-2"
-              placeholder="••••••••"
-              type="password"
-              {...register("password")}
-            />
-            {errors.password && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
-
-          {serverError && (
-            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
-              {serverError}
-            </p>
-          )}
-
-          <button
-            disabled={isSubmitting}
-            className="w-full rounded-lg bg-black px-4 py-2 text-white disabled:opacity-60"
-          >
-            {isSubmitting ? "Prijavljujem..." : "Prijavi se"}
-          </button>
-        </form>
-
-        <p className="mt-4 text-sm text-gray-600">
-          Nemaš račun?{" "}
-          <Link className="underline" href="/register">
-            Registriraj se
+    <div className="flex min-h-[calc(100vh-140px)] items-center justify-center bg-linear-to-br from-rose-50 via-stone-50 to-amber-50 px-4 py-16">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="mb-8 text-center">
+          <Link href="/" className="mb-4 inline-flex items-center gap-2">
+            <svg
+              className="h-5 w-5 text-rose-600"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z" />
+            </svg>
+            <span className="font-semibold text-stone-900">Invito</span>
           </Link>
-        </p>
+          <h1 className="font-display text-3xl font-bold text-stone-900">
+            Dobrodošli nazad
+          </h1>
+          <p className="mt-2 text-sm text-stone-500">
+            Prijavite se da upravljate vašim pozivnicama
+          </p>
+        </div>
+
+        {/* Card */}
+        <div className="rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
+          <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-stone-700">
+                Email adresa
+              </label>
+              <input
+                className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 outline-none transition focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100"
+                placeholder="ivana@email.com"
+                type="email"
+                {...register("email")}
+              />
+              {errors.email && (
+                <p className="mt-1.5 text-xs text-red-600">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-stone-700">
+                Lozinka
+              </label>
+              <input
+                className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 outline-none transition focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100"
+                placeholder="••••••••"
+                type="password"
+                {...register("password")}
+              />
+              {errors.password && (
+                <p className="mt-1.5 text-xs text-red-600">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            {serverError && (
+              <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                {serverError}
+              </div>
+            )}
+
+            <button
+              disabled={isSubmitting}
+              className="w-full rounded-xl bg-rose-700 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-rose-800 disabled:opacity-60"
+            >
+              {isSubmitting ? "Prijavljivanje..." : "Prijavi se"}
+            </button>
+          </form>
+
+          <p className="mt-5 text-center text-sm text-stone-500">
+            Nemate račun?{" "}
+            <Link
+              href="/register"
+              className="font-medium text-rose-700 hover:text-rose-800"
+            >
+              Registrirajte se
+            </Link>
+          </p>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

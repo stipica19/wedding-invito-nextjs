@@ -9,7 +9,8 @@ export type AuthSession = {
 } | null;
 
 export async function getAuthSession(): Promise<AuthSession> {
-    // TODO: Replace with getServerSession from next-auth.
-    // const session = await getServerSession(authOptions);
-    return null;
+    const { getServerSession } = await import("next-auth/next");
+    const { authOptions } = await import("@/app/api/auth/[...nextauth]/route");
+
+    return getServerSession(authOptions);
 }
