@@ -3,14 +3,15 @@ import { connectToDatabase } from "@/lib/db";
 import { Template } from "@/models/Template";
 
 type RouteContext = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 export async function GET(_: Request, context: RouteContext) {
   try {
     await connectToDatabase();
 
-    const template = await Template.findById(context.params.id)
+    const { id } = await context.params;
+    const template = await Template.findById(id)
       .select("_id name category previewImage colorVariants defaultData")
       .lean();
 

@@ -7,7 +7,7 @@ import { invitationUpdateSchema } from "@/schemas/invitation.schema";
 import { getAuthSession } from "@/lib/auth";
 
 type RouteContext = {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 };
 
 export async function GET(_: Request, context: RouteContext) {
@@ -16,7 +16,9 @@ export async function GET(_: Request, context: RouteContext) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(context.params.id)) {
+    const { id } = await context.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
         return NextResponse.json({ message: "Invalid invitation id" }, { status: 400 });
     }
 
@@ -24,7 +26,7 @@ export async function GET(_: Request, context: RouteContext) {
 
     const ownerId = session.user.id;
     const invitation = await Invitation.findOne({
-        _id: context.params.id,
+        _id: id,
         ownerId,
     }).lean();
 
@@ -44,7 +46,9 @@ export async function PATCH(req: Request, context: RouteContext) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(context.params.id)) {
+    const { id } = await context.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
         return NextResponse.json({ message: "Invalid invitation id" }, { status: 400 });
     }
 
@@ -61,7 +65,7 @@ export async function PATCH(req: Request, context: RouteContext) {
 
     const ownerId = session.user.id;
     const invitation = await Invitation.findOne({
-        _id: context.params.id,
+        _id: id,
         ownerId,
     }).lean();
 
@@ -95,7 +99,7 @@ export async function PATCH(req: Request, context: RouteContext) {
         while (
             await Invitation.exists({
                 slug: finalSlug,
-                _id: { $ne: context.params.id },
+                _id: { $ne: id },
             })
         ) {
             i += 1;
@@ -110,7 +114,7 @@ export async function PATCH(req: Request, context: RouteContext) {
     }
 
     const updated = await Invitation.findOneAndUpdate(
-        { _id: context.params.id, ownerId },
+        { _id: id, ownerId },
         { $set: updatePayload },
         { new: true }
     ).lean();
