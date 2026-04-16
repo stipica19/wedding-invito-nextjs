@@ -1,4 +1,35 @@
 import Link from "next/link";
+import { connectToDatabase } from "@/lib/db";
+import { Template } from "@/models/Template";
+import TemplateCard from "@/components/TemplateCard";
+
+type TemplateItem = {
+  id: string;
+  name: string;
+  category: string;
+  colorVariants: string[];
+  defaultData: Record<string, unknown>;
+};
+
+async function getFeaturedTemplates(): Promise<TemplateItem[]> {
+  try {
+    await connectToDatabase();
+    const items = await Template.find()
+      .sort({ createdAt: 1 })
+      .limit(3)
+      .select("_id name category colorVariants defaultData")
+      .lean();
+    return items.map((t) => ({
+      id: String(t._id),
+      name: t.name,
+      category: t.category,
+      colorVariants: t.colorVariants ?? [],
+      defaultData: (t.defaultData as Record<string, unknown>) ?? {},
+    }));
+  } catch {
+    return [];
+  }
+}
 
 const features = [
   {
@@ -85,7 +116,9 @@ const testimonials = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const featuredTemplates = await getFeaturedTemplates();
+
   return (
     <div className="w-full">
       {/* ── Hero ─────────────────────────────────────────────── */}
@@ -178,78 +211,27 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-3">
-            {/* Classic preview */}
-            <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition-shadow hover:shadow-md">
-              <div className="flex h-44 flex-col items-center justify-center border-b border-stone-200 bg-linear-to-br from-amber-50 to-rose-50 p-6 text-center">
-                <p className="text-xs uppercase tracking-widest text-amber-700">
-                  — vjenčanje —
-                </p>
-                <p
-                  className="mt-2 text-xl font-semibold text-stone-800"
-                  style={{ fontFamily: "Georgia, serif" }}
-                >
-                  Ana &amp; Marko
-                </p>
-                <p className="mt-1 text-xs text-stone-500">
-                  15. lipnja 2026 · Hotel Esplanade
-                </p>
-              </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-stone-900">Klasičan</h3>
-                <p className="mt-1 text-xs text-stone-500">
-                  Elegantan, vremenski testiran dizajn
-                </p>
-              </div>
+          {featuredTemplates.length > 0 ? (
+            <div className="grid gap-6 sm:grid-cols-3">
+              {featuredTemplates.map((t) => (
+                <TemplateCard
+                  key={t.id}
+                  id={t.id}
+                  name={t.name}
+                  category={t.category}
+                  colorVariants={t.colorVariants}
+                  defaultData={t.defaultData}
+                />
+              ))}
             </div>
-
-            {/* Garden preview */}
-            <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition-shadow hover:shadow-md">
-              <div className="relative flex h-44 flex-col items-center justify-center overflow-hidden border-b border-stone-200 bg-linear-to-br from-emerald-50 to-teal-50 p-6 text-center">
-                <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/30" />
-                <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-emerald-100/60" />
-                <p className="text-xs uppercase tracking-widest text-emerald-700">
-                  Garden Wedding
-                </p>
-                <p
-                  className="mt-2 text-xl font-semibold italic text-stone-800"
-                  style={{ fontFamily: "Georgia, serif" }}
-                >
-                  Sara &amp; Ivan
-                </p>
-                <p className="mt-1 text-xs text-stone-500">10. kolovoza 2026</p>
-              </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-stone-900">Vrtni</h3>
-                <p className="mt-1 text-xs text-stone-500">
-                  Svježi, prirodni stil s botaničkim detaljima
-                </p>
-              </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-stone-300 p-12 text-center">
+              <p className="text-sm text-stone-500">
+                Templejti nisu učitani. Pokrenite{" "}
+                <code className="rounded bg-stone-100 px-1 py-0.5 text-xs">/api/dev/seed-templates</code>.
+              </p>
             </div>
-
-            {/* Modern preview */}
-            <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition-shadow hover:shadow-md">
-              <div className="flex h-44 flex-col items-center justify-center border-b border-stone-200 bg-linear-to-br from-stone-800 to-stone-900 p-6 text-center">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-amber-400">
-                  — marriage ceremony —
-                </p>
-                <p
-                  className="mt-2 text-xl font-semibold text-white"
-                  style={{ fontFamily: "Georgia, serif" }}
-                >
-                  Elena &amp; David
-                </p>
-                <p className="mt-2 text-xs text-stone-400">20. rujna 2026</p>
-                <div className="mt-3 h-px w-8 bg-amber-500" />
-              </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-stone-900">Moderni</h3>
-                <p className="mt-1 text-xs text-stone-500">
-                  Minimalistički, sofisticirani dizajn
-                </p>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 

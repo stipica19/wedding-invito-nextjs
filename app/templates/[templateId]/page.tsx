@@ -1,17 +1,44 @@
-type TemplatePreviewPageProps = {
-  params: { templateId: string };
+import { notFound } from "next/navigation";
+import { connectToDatabase } from "@/lib/db";
+import { Template } from "@/models/Template";
+import PreviewClient from "./PreviewClient";
+
+type TemplateItem = {
+  id: string;
+  name: string;
+  category: string;
+  colorVariants: string[];
+  defaultData: Record<string, unknown>;
 };
 
-export default function TemplatePreviewPage({
-  params,
-}: TemplatePreviewPageProps) {
-  return (
-    <div className="space-y-4">
-      <h1 className="text-3xl font-bold">Template Preview</h1>
-      <p className="text-sm text-gray-500">Template ID: {params.templateId}</p>
-      <p className="text-sm text-gray-500">
-        TODO: Render template preview details and CTA to create invitation.
-      </p>
-    </div>
-  );
+async function getTemplate(id: string): Promise<TemplateItem | null> {
+  try {
+    await connectToDatabase();
+    const template = await Template.findById(id)
+      .select("_id name category colorVariants defaultData")
+      .lean();
+    if (!template) return null;
+    return {
+      id: String(template._id),
+      name: template.name,
+      category: template.category,
+      colorVariants: template.colorVariants ?? [],
+      defaultData: (template.defaultData as Record<string, unknown>) ?? {},
+    };
+  } catch {
+    return null;
+  }
+}
+
+type Props = {
+  params: Promise<{ templateId: string }>;
+};
+
+export default async function TemplatePreviewPage({ params }: Props) {
+  const { templateId } = await params;
+  const template = await getTemplate(templateId);
+
+  if (!template) notFound();
+
+  return <PreviewClient template={template} />;
 }

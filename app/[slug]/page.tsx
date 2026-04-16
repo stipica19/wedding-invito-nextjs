@@ -48,8 +48,7 @@ export default async function PublicInvitationPage({
       : "Date not set";
 
   return (
-    <div className="space-y-6">
-      
+    <div className="mx-auto max-w-lg px-4 py-10 space-y-8">
       <InvitationPreview
         title={title}
         date={date}

@@ -36,7 +36,13 @@ type RSVPDbItem = {
 const attendingLabel: Record<RSVPItem["attending"], string> = {
   yes: "Dolazi",
   no: "Ne dolazi",
-  maybe: "Mozda",
+  maybe: "Možda",
+};
+
+const attendingBadge: Record<RSVPItem["attending"], string> = {
+  yes: "bg-emerald-100 text-emerald-700",
+  no: "bg-red-100 text-red-700",
+  maybe: "bg-amber-100 text-amber-700",
 };
 
 export default async function InvitationDetailsPage({
@@ -50,13 +56,9 @@ export default async function InvitationDetailsPage({
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
   const session = await getAuthSession();
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
+  if (!session?.user?.id) redirect("/login");
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    notFound();
-  }
+  if (!mongoose.Types.ObjectId.isValid(id)) notFound();
 
   await connectToDatabase();
 
@@ -65,9 +67,7 @@ export default async function InvitationDetailsPage({
     ownerId: session.user.id,
   }).lean()) as InvitationDetail | null;
 
-  if (!invitation) {
-    notFound();
-  }
+  if (!invitation) notFound();
 
   const rsvpDocs = (await RSVP.find({ invitationId: invitation._id })
     .sort({ createdAt: -1 })
@@ -96,7 +96,6 @@ export default async function InvitationDetailsPage({
       query.length === 0 ||
       item.name.toLowerCase().includes(query) ||
       (item.message ?? "").toLowerCase().includes(query);
-
     return statusMatch && queryMatch;
   });
 
@@ -111,117 +110,148 @@ export default async function InvitationDetailsPage({
       : invitation.slug;
 
   return (
-    <main className="space-y-6 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+      {/* Breadcrumb */}
+      <nav className="mb-6 flex items-center gap-2 text-sm text-stone-500">
+        <Link href="/dashboard" className="hover:text-stone-800">Dashboard</Link>
+        <span>/</span>
+        <Link href="/dashboard/invitations" className="hover:text-stone-800">Pozivnice</Link>
+        <span>/</span>
+        <span className="text-stone-800">{title}</span>
+      </nav>
+
+      {/* Header */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{title}</h1>
-          <p className="text-sm text-gray-600">/{invitation.slug}</p>
-          <p className="text-xs uppercase text-gray-500">Status: {invitation.status}</p>
+          <h1 className="font-display text-2xl font-bold text-stone-900">{title}</h1>
+          <p className="mt-0.5 font-mono text-sm text-stone-500">/{invitation.slug}</p>
+          <span className={`mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+            invitation.status === "published"
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-stone-100 text-stone-600"
+          }`}>
+            {invitation.status}
+          </span>
         </div>
-        <div className="flex gap-2">
-          <Link className="rounded-lg border px-3 py-2 text-sm" href="/dashboard/invitations">
-            Nazad na listu
-          </Link>
-          {invitation.status === "published" ? (
+
+        <div className="flex flex-wrap gap-2">
+          {invitation.status === "published" && (
             <Link
-              className="rounded-lg border px-3 py-2 text-sm"
               href={`/${invitation.slug}`}
               target="_blank"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 px-3.5 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50"
             >
-              Otvori javnu stranicu
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Javna stranica
             </Link>
-          ) : (
-            <span className="rounded-lg border px-3 py-2 text-sm text-gray-500">
-              Javni link ce raditi kad status bude published
-            </span>
           )}
           <Link
-            className="rounded-lg border px-3 py-2 text-sm"
             href={`/api/invitations/${String(invitation._id)}/rsvps?format=csv`}
             target="_blank"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 px-3.5 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50"
           >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
             Export CSV
           </Link>
         </div>
       </div>
 
-      <section className="grid gap-3 sm:grid-cols-4">
-        <div className="rounded-lg border p-3">
-          <p className="text-xs uppercase text-gray-500">Ukupno RSVP</p>
-          <p className="mt-2 text-xl font-semibold">{rsvps.length}</p>
+      {/* Stats */}
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-widest text-stone-400">Ukupno RSVP</p>
+          <p className="mt-2 text-2xl font-bold text-stone-900">{rsvps.length}</p>
+          <p className="mt-0.5 text-xs text-stone-500">{totalGuests} gostiju</p>
         </div>
-        <div className="rounded-lg border p-3">
-          <p className="text-xs uppercase text-gray-500">Dolazi</p>
-          <p className="mt-2 text-xl font-semibold">{yesCount}</p>
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-widest text-emerald-600">Dolazi</p>
+          <p className="mt-2 text-2xl font-bold text-emerald-700">{yesCount}</p>
         </div>
-        <div className="rounded-lg border p-3">
-          <p className="text-xs uppercase text-gray-500">Mozda</p>
-          <p className="mt-2 text-xl font-semibold">{maybeCount}</p>
+        <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-widest text-amber-600">Možda</p>
+          <p className="mt-2 text-2xl font-bold text-amber-700">{maybeCount}</p>
         </div>
-        <div className="rounded-lg border p-3">
-          <p className="text-xs uppercase text-gray-500">Ne dolazi</p>
-          <p className="mt-2 text-xl font-semibold">{noCount}</p>
+        <div className="rounded-2xl border border-red-100 bg-red-50 p-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-widest text-red-500">Ne dolazi</p>
+          <p className="mt-2 text-2xl font-bold text-red-600">{noCount}</p>
         </div>
-      </section>
+      </div>
 
-      <section className="rounded-lg border p-4">
-        <p className="text-sm text-gray-600">Ukupan broj gostiju: <b>{totalGuests}</b></p>
-      </section>
-
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold">RSVP odgovori</h2>
-          <p className="text-sm text-gray-600">
-            Prikazano: <b>{filteredRsvps.length}</b> / {rsvps.length}
+      {/* RSVP list */}
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-stone-900">RSVP odgovori</h2>
+          <p className="text-sm text-stone-500">
+            Prikazano <span className="font-medium text-stone-700">{filteredRsvps.length}</span> / {rsvps.length}
           </p>
         </div>
 
-        <form className="grid gap-3 rounded-lg border p-3 sm:grid-cols-[1fr_auto_auto]">
+        {/* Filter form */}
+        <form className="flex flex-col gap-2 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:flex-row">
           <input
             type="search"
             name="q"
             defaultValue={resolvedSearchParams?.q ?? ""}
-            className="w-full rounded-lg border px-3 py-2 text-sm"
-            placeholder="Pretraga po imenu ili poruci"
+            className="flex-1 rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 outline-none transition focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100"
+            placeholder="Pretraga po imenu ili poruci..."
           />
           <select
             name="status"
             defaultValue={activeStatus}
-            className="rounded-lg border px-3 py-2 text-sm"
+            className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-700 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
           >
             <option value="all">Svi statusi</option>
             <option value="yes">Dolazi</option>
-            <option value="maybe">Mozda</option>
+            <option value="maybe">Možda</option>
             <option value="no">Ne dolazi</option>
           </select>
-          <button type="submit" className="rounded-lg border px-3 py-2 text-sm font-medium">
+          <button
+            type="submit"
+            className="rounded-xl bg-rose-700 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-800"
+          >
             Primijeni
           </button>
         </form>
 
         {filteredRsvps.length === 0 ? (
-          <p className="rounded-lg border p-4 text-sm text-gray-600">
-            Nema RSVP odgovora za odabrane filtere.
-          </p>
+          <div className="rounded-2xl border border-dashed border-stone-300 p-10 text-center">
+            <p className="text-sm text-stone-500">Nema RSVP odgovora za odabrane filtere.</p>
+          </div>
         ) : (
           <div className="space-y-2">
             {filteredRsvps.map((item) => (
-              <article key={String(item._id)} className="rounded-lg border p-4">
+              <article
+                key={String(item._id)}
+                className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"
+              >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="font-semibold">{item.name}</h3>
-                  <span className="text-xs uppercase text-gray-500">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-sm font-semibold text-stone-600">
+                      {item.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-stone-900">{item.name}</p>
+                      <p className="text-xs text-stone-500">{item.guestsCount} {item.guestsCount === 1 ? "gost" : "gosti/gostiju"}</p>
+                    </div>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${attendingBadge[item.attending]}`}>
                     {attendingLabel[item.attending]}
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-gray-600">Broj gostiju: {item.guestsCount}</p>
-                {item.message ? (
-                  <p className="mt-2 rounded bg-gray-50 p-2 text-sm text-gray-700">{item.message}</p>
-                ) : null}
+                {item.message && (
+                  <p className="mt-3 rounded-xl bg-stone-50 px-4 py-3 text-sm text-stone-600 italic">
+                    &ldquo;{item.message}&rdquo;
+                  </p>
+                )}
               </article>
             ))}
           </div>
         )}
       </section>
-    </main>
+    </div>
   );
 }

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { templateRegistry } from "./templates/registry";
+import type { TemplateKey } from "./templates/registry";
 
 type TemplateCardProps = {
   id: string;
@@ -7,8 +9,6 @@ type TemplateCardProps = {
   colorVariants?: string[];
   defaultData?: Record<string, unknown>;
 };
-
-type TemplateLayout = "classic" | "garden" | "modern";
 
 function readString(
   data: Record<string, unknown> | undefined,
@@ -20,9 +20,9 @@ function readString(
     : undefined;
 }
 
-function normalizeLayout(value: string | undefined): TemplateLayout {
-  if (value === "garden" || value === "modern") return value;
-  return "classic";
+function getTemplateKey(value: string | undefined): TemplateKey {
+  if (value && value in templateRegistry) return value as TemplateKey;
+  return "elegance";
 }
 
 const colorSwatches: Record<string, string> = {
@@ -39,96 +39,13 @@ const colorLabels: Record<string, string> = {
   rose: "Ružičasta",
 };
 
-function ClassicPreview({
-  title,
-  subtitle,
-  date,
-  location,
-}: {
-  title: string;
-  subtitle: string;
-  date: string;
-  location: string;
-}) {
-  return (
-    <div className="flex h-full flex-col items-center justify-center bg-linear-to-br from-amber-50 to-rose-50 p-6 text-center">
-      <p className="text-[10px] uppercase tracking-[0.2em] text-amber-700">
-        — vjenčanje —
-      </p>
-      <p
-        className="mt-2 text-lg font-semibold leading-tight text-stone-800"
-        style={{ fontFamily: "Georgia, serif" }}
-      >
-        {title}
-      </p>
-      <p className="mt-1 text-[11px] italic text-stone-500">{subtitle}</p>
-      <div className="my-3 h-px w-12 bg-amber-300" />
-      <p className="text-[11px] text-stone-600">{date}</p>
-      <p className="text-[11px] text-stone-500">{location}</p>
-    </div>
-  );
-}
-
-function GardenPreview({
-  title,
-  subtitle,
-  date,
-  location,
-}: {
-  title: string;
-  subtitle: string;
-  date: string;
-  location: string;
-}) {
-  return (
-    <div className="relative flex h-full flex-col items-center justify-center overflow-hidden bg-linear-to-br from-emerald-50 to-teal-50 p-6 text-center">
-      <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-white/30" />
-      <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-emerald-100/60" />
-      <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-700">
-        Garden Wedding
-      </p>
-      <p
-        className="mt-2 text-lg font-semibold italic leading-tight text-stone-800"
-        style={{ fontFamily: "Georgia, serif" }}
-      >
-        {title}
-      </p>
-      <p className="mt-1 text-[11px] text-stone-500">{subtitle}</p>
-      <p className="mt-3 text-[11px] text-stone-600">{date}</p>
-      <p className="text-[11px] text-stone-500">{location}</p>
-    </div>
-  );
-}
-
-function ModernPreview({
-  title,
-  subtitle,
-  date,
-  location,
-}: {
-  title: string;
-  subtitle: string;
-  date: string;
-  location: string;
-}) {
-  return (
-    <div className="flex h-full flex-col items-center justify-center bg-linear-to-br from-stone-800 to-stone-900 p-6 text-center">
-      <p className="text-[9px] uppercase tracking-[0.25em] text-amber-400">
-        — marriage ceremony —
-      </p>
-      <p
-        className="mt-2 text-lg font-semibold leading-tight text-white"
-        style={{ fontFamily: "Georgia, serif" }}
-      >
-        {title}
-      </p>
-      <p className="mt-1 text-[11px] text-stone-400">{subtitle}</p>
-      <div className="my-3 h-px w-8 bg-amber-500" />
-      <p className="text-[11px] text-stone-300">{date}</p>
-      <p className="text-[11px] text-stone-500">{location}</p>
-    </div>
-  );
-}
+// Width at which the template is rendered before scaling.
+// Must match or exceed the template's maxWidth so it renders fully.
+const RENDER_WIDTH = 440;
+// Visual scale — template appears at RENDER_WIDTH * SCALE px wide in the card.
+const SCALE = 0.68;
+// Container height in px — controls how much of the template is revealed.
+const PREVIEW_HEIGHT = 260;
 
 export default function TemplateCard({
   id,
@@ -137,43 +54,64 @@ export default function TemplateCard({
   colorVariants = [],
   defaultData,
 }: TemplateCardProps) {
-  const title = readString(defaultData, "title") ?? name;
-  const subtitle =
-    readString(defaultData, "subtitle") ?? "Vjenčana pozivnica";
+  const title =
+    readString(defaultData, "couple") ??
+    readString(defaultData, "title") ??
+    name;
   const date = readString(defaultData, "date") ?? "Datum TBD";
-  const location = readString(defaultData, "location") ?? "Lokacija TBD";
-  const layout = normalizeLayout(readString(defaultData, "layout"));
+  const layoutKey = getTemplateKey(readString(defaultData, "layout"));
+  const TemplateComponent = templateRegistry[layoutKey];
   const variants = colorVariants.length ? colorVariants : ["default"];
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition-all hover:border-rose-200 hover:shadow-md">
-      {/* Template visual preview */}
-      <div className="h-52 border-b border-stone-200">
-        {layout === "garden" ? (
-          <GardenPreview
+    <article className="group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-rose-200 hover:shadow-xl">
+
+      {/* ── Real template preview (scaled) ── */}
+      <div
+        className="relative overflow-hidden border-b border-stone-200"
+        style={{ height: PREVIEW_HEIGHT }}
+      >
+        {/* Scaled template */}
+        <div
+          style={{
+            width: RENDER_WIDTH,
+            position: "absolute",
+            top: 0,
+            left: "50%",
+            transformOrigin: "top center",
+            transform: `translateX(-50%) scale(${SCALE})`,
+            pointerEvents: "none",
+            userSelect: "none",
+          }}
+        >
+          <TemplateComponent
+            data={defaultData}
             title={title}
-            subtitle={subtitle}
             date={date}
-            location={location}
+            mode="card"
           />
-        ) : layout === "modern" ? (
-          <ModernPreview
-            title={title}
-            subtitle={subtitle}
-            date={date}
-            location={location}
-          />
-        ) : (
-          <ClassicPreview
-            title={title}
-            subtitle={subtitle}
-            date={date}
-            location={location}
-          />
-        )}
+        </div>
+
+        {/* Hover overlay with CTA */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/0 transition-all duration-300 group-hover:bg-black/30">
+          <div className="flex translate-y-4 flex-col items-center gap-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <Link
+              href={`/templates/${id}`}
+              className="rounded-xl bg-white px-5 py-2 text-sm font-semibold text-stone-900 shadow-lg transition-colors hover:bg-stone-50"
+            >
+              Pregledaj pozivnicu
+            </Link>
+            <Link
+              href={`/create/${id}`}
+              className="rounded-xl bg-rose-700 px-5 py-2 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-rose-800"
+            >
+              Koristi ovaj templejt
+            </Link>
+          </div>
+        </div>
       </div>
 
-      {/* Card info */}
+      {/* ── Card info ── */}
       <div className="flex flex-1 flex-col p-4">
         <div className="flex items-start justify-between gap-2">
           <div>
@@ -181,7 +119,7 @@ export default function TemplateCard({
             <p className="mt-0.5 text-xs text-stone-500">{category}</p>
           </div>
           <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-stone-500">
-            {layout}
+            {layoutKey}
           </span>
         </div>
 
@@ -210,12 +148,18 @@ export default function TemplateCard({
         </div>
 
         {/* CTA */}
-        <div className="mt-4">
+        <div className="mt-4 flex flex-col gap-2">
           <Link
             href={`/create/${id}`}
             className="block w-full rounded-xl bg-rose-700 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-rose-800"
           >
             Koristi ovaj templejt
+          </Link>
+          <Link
+            href={`/templates/${id}`}
+            className="block w-full rounded-xl border border-stone-200 py-2.5 text-center text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50"
+          >
+            Pregledaj
           </Link>
         </div>
       </div>
