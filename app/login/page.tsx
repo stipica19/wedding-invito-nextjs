@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -9,7 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { loginSchema, type LoginInput } from "@/schemas/auth.schema";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const rawCallbackUrl = params.get("callbackUrl") || "/dashboard";
@@ -53,9 +54,73 @@ export default function LoginPage() {
   }
 
   return (
+    <div className="rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
+      <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-stone-700">
+            Email adresa
+          </label>
+          <input
+            className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 outline-none transition focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100"
+            placeholder="ivana@email.com"
+            type="email"
+            {...register("email")}
+          />
+          {errors.email && (
+            <p className="mt-1.5 text-xs text-red-600">
+              {errors.email.message}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-stone-700">
+            Lozinka
+          </label>
+          <input
+            className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 outline-none transition focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100"
+            placeholder="••••••••"
+            type="password"
+            {...register("password")}
+          />
+          {errors.password && (
+            <p className="mt-1.5 text-xs text-red-600">
+              {errors.password.message}
+            </p>
+          )}
+        </div>
+
+        {serverError && (
+          <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+            {serverError}
+          </div>
+        )}
+
+        <button
+          disabled={isSubmitting}
+          className="w-full rounded-xl bg-rose-700 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-rose-800 disabled:opacity-60"
+        >
+          {isSubmitting ? "Prijavljivanje..." : "Prijavi se"}
+        </button>
+      </form>
+
+      <p className="mt-5 text-center text-sm text-stone-500">
+        Nemate račun?{" "}
+        <Link
+          href="/register"
+          className="font-medium text-rose-700 hover:text-rose-800"
+        >
+          Registrirajte se
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="flex min-h-[calc(100vh-140px)] items-center justify-center bg-linear-to-br from-rose-50 via-stone-50 to-amber-50 px-4 py-16">
       <div className="w-full max-w-md">
-        {/* Header */}
         <div className="mb-8 text-center">
           <Link href="/" className="mb-4 inline-flex items-center gap-2">
             <svg
@@ -76,67 +141,9 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Card */}
-        <div className="rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
-          <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-stone-700">
-                Email adresa
-              </label>
-              <input
-                className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 outline-none transition focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100"
-                placeholder="ivana@email.com"
-                type="email"
-                {...register("email")}
-              />
-              {errors.email && (
-                <p className="mt-1.5 text-xs text-red-600">
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-stone-700">
-                Lozinka
-              </label>
-              <input
-                className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 outline-none transition focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100"
-                placeholder="••••••••"
-                type="password"
-                {...register("password")}
-              />
-              {errors.password && (
-                <p className="mt-1.5 text-xs text-red-600">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
-
-            {serverError && (
-              <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-                {serverError}
-              </div>
-            )}
-
-            <button
-              disabled={isSubmitting}
-              className="w-full rounded-xl bg-rose-700 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-rose-800 disabled:opacity-60"
-            >
-              {isSubmitting ? "Prijavljivanje..." : "Prijavi se"}
-            </button>
-          </form>
-
-          <p className="mt-5 text-center text-sm text-stone-500">
-            Nemate račun?{" "}
-            <Link
-              href="/register"
-              className="font-medium text-rose-700 hover:text-rose-800"
-            >
-              Registrirajte se
-            </Link>
-          </p>
-        </div>
+        <Suspense fallback={<div className="rounded-2xl border border-stone-200 bg-white p-8 shadow-sm h-64 animate-pulse" />}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );
