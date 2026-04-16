@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { connectToDatabase } from "@/lib/db";
+import { Invitation } from "@/models/Invitation";
 import InvitationPreview from "@/components/InvitationPreview";
 import RSVPForm from "@/components/RSVPForm";
 
@@ -6,26 +8,23 @@ type PublicInvitationPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-type PublicInvitationPayload = {
-  id: string;
-  slug: string;
-  status: "draft" | "pending" | "published";
-  selectedColor?: string;
-  data?: Record<string, unknown>;
-};
+async function getPublicInvitation(slug: string) {
+  await connectToDatabase();
 
-async function getPublicInvitation(
-  slug: string
-): Promise<PublicInvitationPayload | null> {
-  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/public/invitations/${slug}`, {
-    cache: "no-store",
-  });
+  const invitation = await Invitation.findOne({
+    slug,
+    status: "published",
+  }).lean();
 
-  if (!res.ok) return null;
+  if (!invitation) return null;
 
-  const payload = await res.json().catch(() => ({}));
-  return (payload?.data ?? null) as PublicInvitationPayload | null;
+  return {
+    id: String(invitation._id),
+    slug: invitation.slug,
+    status: invitation.status as "draft" | "pending" | "published",
+    selectedColor: invitation.selectedColor ?? "default",
+    data: (invitation.data ?? {}) as Record<string, unknown>,
+  };
 }
 
 export default async function PublicInvitationPage({
