@@ -39,10 +39,10 @@ export default async function CreateInvitationPage({ params }: PageProps) {
 
   if (!template) notFound();
 
-  const rawLayout = String(template.defaultData.layout ?? "classic");
+  const rawLayout = String(template.defaultData.layout ?? "elegance");
   const layoutKey: TemplateKey = rawLayout in templateRegistry
     ? (rawLayout as TemplateKey)
-    : "classic";
+    : "elegance";
 
   const schema = schemaRegistry[layoutKey] ?? schemaRegistry.classic;
 

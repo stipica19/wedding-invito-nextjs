@@ -165,7 +165,7 @@ function LivePreview({
   data: Record<string, unknown>;
   selectedColor: string;
 }) {
-  const TemplateComponent = templateRegistry[layoutKey] ?? templateRegistry.classic;
+  const TemplateComponent = templateRegistry[layoutKey] ?? templateRegistry.elegance;
   return (
     <div className="overflow-hidden rounded-2xl shadow-lg" style={{ width: Math.round(RENDER_W * SCALE) }}>
       <div

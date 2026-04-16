@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
-import type { NextAuthOptions } from "next-auth";
+import type { JWT } from "next-auth/jwt";
+import type { Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 
@@ -12,8 +13,8 @@ type CredentialsUserPayload = {
     role?: unknown;
 };
 
-export const authOptions: NextAuthOptions = {
-    session: { strategy: "jwt" },
+export const authOptions = {
+    session: { strategy: "jwt" as const },
     providers: [
         CredentialsProvider({
             name: "Credentials",
@@ -45,7 +46,7 @@ export const authOptions: NextAuthOptions = {
     ],
 
     callbacks: {
-        async jwt({ token, user }) {
+        async jwt({ token, user }: { token: JWT; user: unknown }) {
             if (user) {
                 const authUser = user as CredentialsUserPayload;
 
@@ -61,7 +62,7 @@ export const authOptions: NextAuthOptions = {
             return token;
         },
 
-        async session({ session, token }) {
+        async session({ session, token }: { session: Session; token: JWT }) {
             if (session.user && typeof token.id === "string") {
                 session.user.id = token.id;
             }

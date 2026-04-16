@@ -28,7 +28,7 @@ const colorSwatches: Record<string, string> = {
 
 function getTemplateKey(layout: unknown): TemplateKey {
   if (typeof layout === "string" && layout in templateRegistry) return layout as TemplateKey;
-  return "classic";
+  return "elegance";
 }
 
 export default function PreviewClient({ template }: { template: TemplateItem }) {

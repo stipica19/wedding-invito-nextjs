@@ -22,7 +22,7 @@ function readStringField(data: Record<string, unknown> | undefined, key: string)
 function getTemplateKey(data?: Record<string, unknown>): TemplateKey {
   const raw = data?.layout;
   if (typeof raw === "string" && raw in templateRegistry) return raw as TemplateKey;
-  return "classic";
+  return "elegance";
 }
 
 export default function InvitationPreview({
