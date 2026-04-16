@@ -44,7 +44,7 @@ export default async function CreateInvitationPage({ params }: PageProps) {
     ? (rawLayout as TemplateKey)
     : "elegance";
 
-  const schema = schemaRegistry[layoutKey] ?? schemaRegistry.classic;
+  const schema = schemaRegistry[layoutKey] ?? schemaRegistry.elegance;
 
   return (
     <CreateForm

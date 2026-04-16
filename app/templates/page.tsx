@@ -1,3 +1,5 @@
+import { connectToDatabase } from "@/lib/db";
+import { Template } from "@/models/Template";
 import TemplateCard from "@/components/TemplateCard";
 
 type TemplateItem = {
@@ -9,12 +11,21 @@ type TemplateItem = {
 };
 
 async function getTemplates(): Promise<TemplateItem[]> {
-  const res = await fetch("http://localhost:3000/api/templates", {
-    cache: "no-store",
-  });
-  if (!res.ok) return [];
-  const data = await res.json().catch(() => ({}));
-  return data?.items ?? [];
+  try {
+    await connectToDatabase();
+    const templates = await Template.find()
+      .select("_id name category colorVariants defaultData")
+      .lean();
+    return templates.map((t) => ({
+      id: String(t._id),
+      name: t.name,
+      category: t.category,
+      colorVariants: t.colorVariants ?? [],
+      defaultData: (t.defaultData as Record<string, unknown>) ?? {},
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export default async function TemplatesPage() {
